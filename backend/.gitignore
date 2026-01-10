@@ -1,0 +1,28 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+venv/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# FAISS index (optional, if you ever save it)
+*.index
+
+# Pytest cache
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.swp
