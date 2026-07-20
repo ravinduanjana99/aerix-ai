@@ -33,3 +33,9 @@ nav a:hover {
 h2 {
   font-family: 'Audiowide', cursive;
 }
+
+@media (max-width: 768px) {
+  nav {
+    display: none !important; /* Hides the top nav element on mobile */
+  }
+}

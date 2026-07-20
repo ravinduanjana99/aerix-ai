@@ -1,0 +1,64 @@
+
+.input-container {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.05); /* Dark pill background */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px; /* Smooth rounded shape like Gemini */
+  padding: 6px 8px 6px 18px; /* Extra left padding for placeholder text */
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-container:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Remove default borders and backgrounds from <input> */
+.input-container input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 8px 0;
+}
+
+.input-container input::placeholder {
+  color: rgba(150, 150, 150, 0.4);
+  font-weight: 100 !important;
+}
+
+/* Circular inline send button */
+.send-btn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.send-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.send-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.send-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}

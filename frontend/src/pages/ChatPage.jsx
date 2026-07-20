@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { sendMessage } from "../api/chatApi";
-import "../styles/chat.css";
-import ReactMarkdown from "react-markdown";
+import Sidebar from "../components/Sidebar";
+import ChatPanel from "../components/ChatPanel";
+
+import "../styles/global.css";
+
+import "../styles/chat-layout.css";
+import "../styles/chat-messages.css";
+import "../styles/chat-input.css";
 
 const INITIAL_MESSAGE = {
   sender: "AERIX",
@@ -17,11 +23,24 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const chatBoxRef = useRef(null);
+  // 1. Sidebar Toggle State (defaults to open on desktop)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  /* ----------------------------------
-     LOAD FROM LOCAL STORAGE
-  ---------------------------------- */
+  // 2. Automatically close sidebar on initial mobile page load
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    // Run once on load
+    handleResize();
+  }, []);
+
+  /* Load Local Storage */
   useEffect(() => {
     const savedMessages = localStorage.getItem(STORAGE_MESSAGES);
     const savedHistory = localStorage.getItem(STORAGE_HISTORY);
@@ -30,9 +49,7 @@ export default function ChatPage() {
     if (savedHistory) setChatHistory(JSON.parse(savedHistory));
   }, []);
 
-  /* ----------------------------------
-     SAVE TO LOCAL STORAGE
-  ---------------------------------- */
+  /* Persist Local Storage */
   useEffect(() => {
     localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(messages));
   }, [messages]);
@@ -41,33 +58,22 @@ export default function ChatPage() {
     localStorage.setItem(STORAGE_HISTORY, JSON.stringify(chatHistory));
   }, [chatHistory]);
 
-  /* ----------------------------------
-     AUTO SCROLL
-  ---------------------------------- */
-  useEffect(() => {
-    if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-    }
-  }, [messages, loading]);
+  /* Actions */
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
 
-  /* ----------------------------------
-     SEND MESSAGE
-  ---------------------------------- */
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMsg = { sender: "You", text: input };
-
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
 
     try {
       const data = await sendMessage(input);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "AERIX", text: data.reply },
-      ]);
+      setMessages((prev) => [...prev, { sender: "AERIX", text: data.reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -78,20 +84,7 @@ export default function ChatPage() {
     }
   };
 
-  /* ----------------------------------
-     ENTER KEY SUPPORT
-  ---------------------------------- */
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  /* ----------------------------------
-     NEW CHAT
-  ---------------------------------- */
-  const newChat = () => {
+  const handleNewChat = () => {
     const firstUserMsg = messages.find((m) => m.sender === "You");
 
     if (messages.length > 1 && firstUserMsg) {
@@ -103,21 +96,20 @@ export default function ChatPage() {
         },
       ]);
     }
-
     setMessages([INITIAL_MESSAGE]);
+    
+    // On mobile, auto-close sidebar after starting a new chat
+    if (window.innerWidth <= 768) setIsSidebarOpen(false);
   };
 
-  /* ----------------------------------
-     LOAD CHAT
-  ---------------------------------- */
-  const loadChat = (index) => {
+  const handleLoadChat = (index) => {
     setMessages(chatHistory[index].messages);
+    
+    // On mobile, auto-close sidebar after choosing a conversation
+    if (window.innerWidth <= 768) setIsSidebarOpen(false);
   };
 
-  /* ----------------------------------
-     RESET HISTORY
-  ---------------------------------- */
-  const resetHistory = () => {
+  const handleResetHistory = () => {
     localStorage.removeItem(STORAGE_MESSAGES);
     localStorage.removeItem(STORAGE_HISTORY);
     setChatHistory([]);
@@ -126,83 +118,23 @@ export default function ChatPage() {
 
   return (
     <div className="app-layout">
-      {/* BACKGROUND VIDEO */}
-      <video className="background-video" autoPlay loop muted playsInline>
-        <source src="/background1.mp4" type="video/mp4" />
-      </video>
-
-      {/* SIDEBAR */}
-      <div className="sidebar">
-        <button className="new-chat-btn" onClick={newChat}>
-          + New Chat
-        </button>
-
-        <div className="history-list">
-          {chatHistory.map((chat, i) => (
-            <button
-              key={i}
-              className="history-item"
-              onClick={() => loadChat(i)}
-              title={chat.title}
-            >
-              {chat.title}...
-            </button>
-          ))}
-        </div>
-
-        <button className="reset-btn" onClick={resetHistory}>
-          Reset History
-        </button>
-      </div>
-
-      {/* CHAT PANEL */}
-      <div className="chat-panel">
-        <div className="chat-box" ref={chatBoxRef}>
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`chat-message ${
-                msg.sender === "You" ? "user" : "bot"
-              }`}
-            >
-              {msg.sender === "AERIX" ? (
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
-              ) : (
-                msg.text
-              )}
-            </div>
-          ))}
-
-          {loading && (
-            <div className="chat-message bot">AERIX is typing...</div>
-          )}
-        </div>
-
-        <div className="input-box">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your question here..."
-          />
-          <button onClick={handleSend}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="send-icon"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 10l9-7 11 11-9 7-2-5-5-2z"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={toggleSidebar}
+        onNewChat={handleNewChat}
+        chatHistory={chatHistory}
+        onLoadChat={handleLoadChat}
+        onResetHistory={handleResetHistory}
+      />
+      <ChatPanel
+        messages={messages}
+        loading={loading}
+        input={input}
+        setInput={setInput}
+        onSend={handleSend}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+      />
     </div>
   );
 }

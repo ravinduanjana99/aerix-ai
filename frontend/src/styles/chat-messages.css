@@ -1,0 +1,99 @@
+/* -------------------------------------------------- */
+/* CHAT MESSAGES                                      */
+/* -------------------------------------------------- */
+.chat-message {
+  margin-bottom: 8px;
+  word-wrap: break-word;
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-width: 75%;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+  font-weight: 400 !important; /* Force regular font weight */
+}
+
+/* User Bubble */
+.chat-message.user {
+  background-color: rgb(37, 38, 38);
+  align-self: flex-end;
+  color: #fff;
+  border: nonr;
+  border-radius: 12px;
+  animation: fadeIn 0.4s ease forwards;
+  font-weight: 400 !important;
+}
+
+/* Bot Message */
+.chat-message.bot {
+  align-self: flex-start;
+  color: #fff;
+  animation: fadeIn 0.4s ease forwards;
+  text-align: left;
+  font-weight: 400 !important;
+}
+
+/* Force all child text elements to regular weight */
+.chat-message *,
+.chat-message p,
+.chat-message span,
+.chat-message div {
+  font-weight: 400 !important;
+}
+
+/* Markdown Rendering Inside Bot Messages */
+.chat-message.bot p {
+  margin: 4px 0;
+  font-weight: 400 !important;
+}
+
+/* Reset heading tags so they don't force bold text */
+.chat-message.bot h1,
+.chat-message.bot h2,
+.chat-message.bot h3 {
+  margin: 10px 0 6px 0;
+  font-weight: 400 !important; /* Changed from 600 to 400 */
+}
+
+.chat-message.bot ul,
+.chat-message.bot ol {
+  padding-left: 20px;
+  margin: 6px 0;
+  font-weight: 400 !important;
+}
+
+.chat-message.bot blockquote {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  opacity: 0.9;
+  font-weight: 400 !important;
+}
+
+.chat-message.bot pre {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-weight: 400 !important;
+}
+
+.chat-message.bot code {
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 400 !important;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
