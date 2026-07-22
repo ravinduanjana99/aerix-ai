@@ -1,6 +1,8 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import MessageItem from "./MessageItem";
 import ChatInput from "./ChatInput";
+
+import "./ChatPanel.css";
 
 export default function ChatPanel({
   messages,

@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import "./MessageItem.css";
 
 export default function MessageItem({ sender, text }) {
   const isBot = sender === "AERIX";

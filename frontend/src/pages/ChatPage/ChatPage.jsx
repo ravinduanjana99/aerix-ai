@@ -1,11 +1,18 @@
-import { useState, useEffect } from "react";
-import { sendMessage } from "../api/chatApi";
-import Sidebar from "../components/Sidebar";
-import ChatPanel from "../components/ChatPanel";
+import React, { useState, useEffect } from "react";
 
-import "../styles/chat-layout.css";
-import "../styles/chat-messages.css";
-import "../styles/chat-input.css";
+// Shared components
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+
+// Local Chat components
+import Sidebar from "./components/Sidebar";
+import ChatPanel from "./components/ChatPanel";
+
+// If sendMessage comes from your API file, make sure to import it here:
+import { sendMessage } from "../../api/chatApi"; // <-- Adjust path if your API file is located elsewhere
+
+// Local Chat styles
+import "./ChatPage.css";
 
 const INITIAL_MESSAGE = {
   sender: "AERIX",

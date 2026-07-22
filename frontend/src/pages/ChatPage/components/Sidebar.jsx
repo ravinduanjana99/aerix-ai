@@ -1,5 +1,5 @@
 import HistoryList from "./HistoryList";
-import "../styles/sidebar.css";
+import "./Sidebar.css"; 
 
 export default function Sidebar({
   isOpen,
