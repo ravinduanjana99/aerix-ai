@@ -1,0 +1,71 @@
+.features-section {
+  margin-bottom: 140px;
+}
+
+.section-title.brand-red {
+  font-family: 'Anybody', cursive;
+  font-weight: 800; 
+  color: #ff2a2a;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.feature-card {
+  background: rgba(15, 5, 8, 0.6);
+  border: 1px solid rgba(255, 42, 42, 0.2);
+  border-radius: 16px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  backdrop-filter: blur(6px);
+  
+  /* Initial starting states for animation */
+  box-shadow: 0 0 0px rgba(255, 42, 42, 0);
+  transform: translateY(0);
+
+  /* PUT TRANSITION HERE: Controls both hover-in AND hover-out */
+  transition: transform 1s ease, box-shadow 1s ease, border-color 1s ease !important;
+}
+
+.feature-card:hover {
+  border-color: rgba(255, 42, 42, 0.6);
+  box-shadow: 0 0 25px rgba(255, 42, 42, 0.25);
+  transform: translateY(-4px);
+}
+
+.feature-card h3 {
+  font-family: 'Anybody', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.card-icon {
+  width: 52px;
+  height: 52px;
+  color: #ff2a2a;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 8px rgba(255, 42, 42, 0.6));
+}
+
+.feature-card p {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}

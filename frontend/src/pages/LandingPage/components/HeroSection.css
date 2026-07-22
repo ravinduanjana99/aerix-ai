@@ -1,0 +1,72 @@
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 140px;
+}
+
+.hero-title {
+  font-family: 'Anybody', sans-serif;
+  font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #ffffff;
+  margin-bottom: 40px;
+  letter-spacing: -0.5px;
+}
+
+.hero-subheading {
+  font-family: 'Anybody', sans-serif;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.hero-description {
+  font-family: 'Inter', sans-serif;
+  max-width: 620px;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  font-weight: 300;
+  margin-bottom: 36px;
+}
+
+.primary-btn {
+  /* Starting background as explicit transparent RED (rgba), not 'transparent' */
+  background: rgba(255, 42, 42, 0);
+  color: #ffffff;
+  border: 1px solid rgba(255, 42, 42, 0.6);
+  padding: 12px 36px;
+  border-radius: 50px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(255, 42, 42, 0.2), inset 0 0 10px rgba(255, 42, 42, 0.1);
+  
+  /* Explicit baseline position */
+  transform: translateY(0);
+
+  /* Clean transition rule */
+  transition: all 1s ease !important;
+  margin-bottom: 28px;
+}
+
+.primary-btn:hover {
+  background: rgba(255, 42, 42, 1); /* Solid red */
+  color: #000000;
+  border-color: #ff2a2a;
+  box-shadow: 0 0 25px rgba(255, 42, 42, 0.8), inset 0 0 0px rgba(255, 42, 42, 0);
+  transform: translateY(-2px);
+}
+
+.tagline-italic {
+  font-family: 'Roboto Condensed', sans-serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 300;
+  color: #64748b;
+}

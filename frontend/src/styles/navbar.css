@@ -1,37 +1,56 @@
 nav {
+  position: fixed;
+  top: 5;
+  left: 5;
+  width: 100%;
+  z-index: 100;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 32px;
-  background: transparent;
+  padding: 16px 6vw;
   color: #fff;
   font-weight: 400;
   font-family: 'League Spartan', sans-serif;
+  box-sizing: border-box;
+  border-radius: 10px;
 }
 
-nav a {
+nav h2 {
+  font-family: 'Audiowide', cursive;
+  font-size: 1.5rem;
+  color: #ff2a2a;
+  margin: 0;
+}
+
+nav h2 span {
+  color: #ff2a2a;
+  font-weight: 400;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+
+nav a,
+.nav-btn {
+  background: transparent;
+  border: none;
   color: #fff;
   margin-left: 20px;
-  font-size: 16px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
   text-decoration: none;
-  transition: color 0.5s ease, text-shadow 0.5s ease;
+  cursor: pointer;
+  font-weight: 200;
+  transition: color 1s ease, text-shadow 1s ease;
 }
 
-nav a:hover {
-  color: transparent;
-  background: linear-gradient(90deg, #ec4899, #3b82f6, #facc15);
+nav a:hover,
+.nav-btn:hover {
+  color: #ff2a2a;
   -webkit-background-clip: text;
   background-clip: text;
-
-  text-shadow:
-    0 0 2px rgba(236, 72, 153, 0.6),
-    0 0 2px rgba(59, 130, 246, 0.6),
-    0 0 2px rgba(250, 204, 21, 0.6);
-}
-
-
-h2 {
-  font-family: 'Audiowide', cursive;
 }
 
 @media (max-width: 768px) {

@@ -3,8 +3,6 @@ import { sendMessage } from "../api/chatApi";
 import Sidebar from "../components/Sidebar";
 import ChatPanel from "../components/ChatPanel";
 
-import "../styles/global.css";
-
 import "../styles/chat-layout.css";
 import "../styles/chat-messages.css";
 import "../styles/chat-input.css";

@@ -1,0 +1,25 @@
+.about-section {
+  margin-bottom: 140px;
+}
+
+.section-title {
+  font-family: 'Anybody', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ff0000;
+  margin-bottom: 24px;
+}
+
+.about-content {
+  font-family: 'Inter', sans-serif;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #ffffff;
+  font-weight: 300;
+}
