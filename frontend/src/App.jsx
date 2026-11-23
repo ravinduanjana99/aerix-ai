@@ -2,21 +2,21 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import LandingPage from "./pages/LandingPage/LandingPage";
 import ChatPage from "./pages/ChatPage/ChatPage";
+import ThreeStudio from "./pages/ThreeStudio/ThreeStudio";
 
 import "./index.css";
 
 function AppContent() {
   const location = useLocation();
 
-  // Check if current route is the chat page
-  const isChatPage = location.pathname === "/chat";
+  // Check if current route is full-screen interactive app (chat or 3D studio)
+  const isFullScreenApp = location.pathname === "/chat" || location.pathname === "/studio" || location.pathname === "/canvas";
 
   useEffect(() => {
-    // Skip smooth scrolling on the chat page so message inputs stay responsive
-    if (isChatPage) return;
+    // Skip smooth scrolling on chat & 3D studio pages so interactions stay responsive
+    if (isFullScreenApp) return;
 
     // Initialize Lenis with ultra-slow, heavy inertia parameters
     const lenis = new Lenis({
@@ -36,20 +36,19 @@ function AppContent() {
     return () => {
       lenis.destroy();
     };
-  }, [isChatPage]);
+  }, [isFullScreenApp]);
 
   return (
     <>
-      {/* Show Navbar on all pages EXCEPT /chat */}
-      {!isChatPage && <Navbar />}
+      {/* Show Navbar on landing pages */}
+      {!isFullScreenApp && <Navbar />}
 
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/studio" element={<ThreeStudio />} />
+        <Route path="/canvas" element={<ThreeStudio />} />
       </Routes>
-
-      {/* Show Footer on all pages EXCEPT /chat */}
-      {!isChatPage && <Footer />}
     </>
   );
 }
