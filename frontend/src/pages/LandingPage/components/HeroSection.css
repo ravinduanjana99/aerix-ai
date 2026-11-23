@@ -6,67 +6,68 @@
 }
 
 .hero-title {
-  font-family: 'Anybody', sans-serif;
-  font-size: clamp(2.2rem, 4.5vw, 3.8rem);
-  font-weight: 800;
-  line-height: 1.15;
+  font-family: var(--font-inter);
+  font-size: clamp(2.3rem, 4.6vw, 3.8rem);
+  font-weight: 600;
+  line-height: 1.18;
   color: #ffffff;
-  margin-bottom: 40px;
-  letter-spacing: -0.5px;
+  margin-bottom: 30px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.7);
 }
 
 .hero-subheading {
-  font-family: 'Anybody', sans-serif;
-  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 16px;
+  font-family: var(--font-inter);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 500;
+  color: #f8fafc;
+  margin-bottom: 18px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
 }
 
 .hero-description {
-  font-family: 'Inter', sans-serif;
-  max-width: 620px;
-  font-size: 1.2rem;
-  line-height: 1.5;
-  color: #cbd5e1;
-  font-weight: 300;
+  font-family: var(--font-inter);
+  max-width: 640px;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  font-weight: 350;
   margin-bottom: 36px;
 }
 
 .primary-btn {
-  /* Starting background as explicit transparent RED (rgba), not 'transparent' */
-  background: rgba(255, 42, 42, 0);
+  background: var(--brand-red);
   color: #ffffff;
-  border: 1px solid rgba(255, 42, 42, 0.6);
-  padding: 12px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 13px 38px;
   border-radius: 50px;
-  font-family: 'Inter', sans-serif;
-  font-size: 1.05rem;
+  font-family: var(--font-inter);
+  font-size: 1rem;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(255, 42, 42, 0.2), inset 0 0 10px rgba(255, 42, 42, 0.1);
-  
-  /* Explicit baseline position */
+  box-shadow: 0 0 24px rgba(255, 51, 68, 0.45);
   transform: translateY(0);
-
-  /* Clean transition rule */
-  transition: all 1s ease !important;
-  margin-bottom: 28px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 24px;
 }
 
 .primary-btn:hover {
-  background: rgba(255, 42, 42, 1); /* Solid red */
-  color: #000000;
-  border-color: #ff2a2a;
-  box-shadow: 0 0 25px rgba(255, 42, 42, 0.8), inset 0 0 0px rgba(255, 42, 42, 0);
+  background: var(--brand-red-hover);
+  color: #ffffff;
+  box-shadow: 0 0 36px rgba(255, 51, 68, 0.75);
   transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .tagline-italic {
-  font-family: 'Roboto Condensed', sans-serif;
-  font-style: italic;
-  font-size: 1rem;
-  font-weight: 300;
-  color: #64748b;
+  font-family: var(--font-inter);
+  font-size: 0.95rem;
+  font-weight: 350;
+  color: var(--text-dim);
+  letter-spacing: 0.2px;
 }

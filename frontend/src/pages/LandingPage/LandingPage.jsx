@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import Navbar from "../../components/Navbar";
 import HeroSection from "./components/HeroSection";
 import AboutSection from "./components/AboutSection";
 import FeaturesSection from "./components/FeaturesSection";
@@ -10,7 +9,19 @@ import "./LandingPage.css";
 export default function LandingPage() {
   const location = useLocation();
 
-  // Handle scroll target when redirected from another page
+
+  // Scroll to top on refresh or initial load
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    if (!location.state?.scrollTo) {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
+
+  // Handle scroll target when redirected from another page with state
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -45,13 +56,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-container">
-      {/* Navbar Component */}
-      <Navbar />
-
-      {/* Ambient Red Background Glow */}
       <div className="radial-ambient-glow" />
-
-      {/* Main Content Wrapper */}
       <main className="main-wrapper">
         <HeroSection />
         <AboutSection />

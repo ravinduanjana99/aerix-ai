@@ -11,10 +11,13 @@ html {
 
 html, body {
   width: 100%;
-  font-family: 'Roboto Condensed', sans-serif;
-  background-color: #030103;
-  color: #e2e8f0;
+  min-height: 100vh;
+  font-family: var(--font-inter);
+  background-color: var(--bg-color-dark);
+  color: var(--text-main);
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Landing Layout Container */
@@ -23,14 +26,15 @@ html, body {
   width: 100%;
   min-height: 100vh;
   background: #030103;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Smooth, Slow Fade-In Reveal Animation */
 .fade-in {
   opacity: 0;
-  transform: translateY(40px); /* Slightly increased distance for a dramatic upward glide */
+  transform: translateY(40px);
   
-  /* Both opacity and transform now take 1.8 seconds with a smooth, ultra-relaxed easing curve */
   transition: opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1), 
               transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
   
@@ -41,25 +45,76 @@ html, body {
   opacity: 1;
   transform: translateY(0);
 }
-/* Radial Ambient Red Glow */
+
+/* Multi-Orb Dark Ambient Red Background */
+/* Multi-Orb Dark Ambient Red Background */
 .radial-ambient-glow {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 120vw;
-  height: 120vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(
-    circle at center,
-    rgba(140, 15, 25, 0.35) 0%,
-    rgba(70, 8, 15, 0.20) 35%,
-    rgba(3, 1, 3, 0.88) 70%,
-    #030103 100%
-  );
-  animation: ambientBreathe 9s ease-in-out infinite alternate;
+  background-color: #030103;
+  
+  background-image: 
+    radial-gradient(ellipse 45% 35% at 50% 15%, rgba(76, 2, 10, 0.45) 0%, rgba(3, 1, 3, 0) 100%),
+    radial-gradient(ellipse 50% 40% at 15% 48%, rgba(80, 3, 9, 0.5) 0%, rgba(3, 1, 3, 0) 100%),
+    radial-gradient(ellipse 50% 40% at 85% 48%, rgba(77, 3, 10, 0.5) 0%, rgba(3, 1, 3, 0) 100%),
+    radial-gradient(ellipse 55% 30% at 50% 90%, rgba(65, 2, 7, 0.35) 0%, rgba(3, 1, 3, 0) 100%);
+
+  animation: multiOrbBreathe 10s ease-in-out infinite alternate;
 }
+
+.radial-ambient-glow::after {
+  content: '';
+  position: absolute;
+  top: 320px;
+  left: 50%;
+  width: 1600px;
+  height: 800px;
+  transform: translateX(-50%);
+  border-radius: 50% 50% 0 0;
+  border-top: 4px solid rgba(255, 42, 42, 0.85); /* thicker + brighter core line */
+  
+  /* Layered glow: tight bright core → mid spread → wide soft halo */
+  box-shadow: 
+    0 0 8px 1px rgba(255, 42, 42, 0.6),
+    0 0 24px 4px rgba(255, 42, 42, 0.4),
+    0 0 60px 10px rgba(255, 42, 42, 0.25),
+    0 0 120px 20px rgba(255, 42, 42, 0.12);
+
+  opacity: 1;
+
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 25%,
+    black 75%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 25%,
+    black 75%,
+    transparent 100%
+  );
+}
+
+/* Subtle Breathing Animation */
+@keyframes multiOrbBreathe {
+  0% {
+    opacity: 0.8;
+    filter: brightness(0.9);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1.15);
+  }
+}
+
 
 /* Main Content Wrapper */
 .main-wrapper {
@@ -69,12 +124,16 @@ html, body {
   margin: 0 auto;
   padding: 140px 24px 80px;
   text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .brand-red {
-  font-family: 'Audiowide', cursive;
+  font-family: var(--font-audiowide);
   font-size: 2.3rem;
-  color: #ff2a2a;
+  color: var(--brand-red);
+  text-shadow: 0 0 20px rgba(255, 51, 68, 0.4);
   margin: 0;
 }
 
@@ -87,4 +146,70 @@ html, body {
     transform: translate(-50%, -50%) scale(1.1);
     opacity: 1;
   }
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS
+   ========================================================================== */
+@media (max-width: 768px) {
+  .landing-container {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+
+  .main-wrapper {
+    padding: 100px 20px 40px !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .radial-ambient-glow {
+    height: 100% !important;
+    min-height: 100vh !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    top: 0 !important;
+  }
+
+  .fade-in {
+    transform: translateY(20px);
+    transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), 
+                transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .brand-red {
+    font-size: 1.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .main-wrapper {
+    padding: 80px 16px 30px !important;
+  }
+
+  .brand-red {
+    font-size: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+  .radial-ambient-glow::after {
+    top: 250px;
+    width: 1100px;
+    height: 550px;
+    border-radius: 50% 50% 0 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .radial-ambient-glow::after {
+    top: 250px;
+    width: 900px;
+    height: 450px;
+    border-radius: 50% 50% 0 0;
+  }
+}
 }

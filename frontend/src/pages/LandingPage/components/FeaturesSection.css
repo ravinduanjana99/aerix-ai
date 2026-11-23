@@ -2,10 +2,25 @@
   margin-bottom: 140px;
 }
 
+.section-title {
+  font-family: var(--font-inter);
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
 .section-title.brand-red {
-  font-family: 'Anybody', cursive;
-  font-weight: 800; 
-  color: #ff2a2a;
+  font-family: var(--font-inter);
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 50%, var(--brand-red-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  margin-bottom: 16px;
 }
 
 .features-grid {
@@ -16,56 +31,60 @@
 }
 
 .feature-card {
-  background: rgba(15, 5, 8, 0.6);
-  border: 1px solid rgba(255, 42, 42, 0.2);
-  border-radius: 16px;
-  padding: 32px 24px;
+  background: rgba(18, 14, 20, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 34px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  backdrop-filter: blur(6px);
-  
-  /* Initial starting states for animation */
-  box-shadow: 0 0 0px rgba(255, 42, 42, 0);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
   transform: translateY(0);
-
-  /* PUT TRANSITION HERE: Controls both hover-in AND hover-out */
-  transition: transform 1s ease, box-shadow 1s ease, border-color 1s ease !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .feature-card:hover {
-  border-color: rgba(255, 42, 42, 0.6);
-  box-shadow: 0 0 25px rgba(255, 42, 42, 0.25);
+  border-color: var(--brand-red-border);
+  box-shadow: 0 8px 32px rgba(255, 51, 68, 0.18);
   transform: translateY(-4px);
 }
 
 .feature-card h3 {
-  font-family: 'Anybody', sans-serif;
+  font-family: var(--font-inter);
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #ffffff;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+  letter-spacing: -0.01em;
 }
 
 .card-icon {
-  width: 52px;
-  height: 52px;
-  color: #ff2a2a;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 0 8px rgba(255, 42, 42, 0.6));
+  width: 48px;
+  height: 48px;
+  color: var(--brand-red);
+  margin-bottom: 18px;
+  filter: drop-shadow(0 0 12px rgba(255, 51, 68, 0.5));
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover .card-icon {
+  transform: scale(1.08);
 }
 
 .feature-card p {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: #94a3b8;
-  font-weight: 300;
+  font-family: var(--font-inter);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  font-weight: 350;
 }
 
 @media (max-width: 768px) {
   .features-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }

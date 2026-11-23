@@ -1,12 +1,16 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
 
-export const sendMessage = async (message, sessionId) => {
-  const res = await axios.post(`${API_BASE}/chat`, {
+export const sendMessage = async (message, sessionId, language = null) => {
+  const payload = {
     message,
     session_id: sessionId,
-  });
+  };
+  if (language) {
+    payload.language = language;
+  }
+  const res = await axios.post(`${API_BASE}/chat`, payload);
   return res.data;
 };
 
@@ -22,4 +26,12 @@ export const resetHistory = async (sessionId) => {
 export const getSessions = async () => {
   const res = await axios.get(`${API_BASE}/sessions`);
   return res.data;
+};
+
+export const getSpeechAudioUrl = (text, lang = "si", gender = "female", speed = "") => {
+  let url = `${API_BASE}/voice/speak?text=${encodeURIComponent(text)}&lang=${lang}&gender=${gender}`;
+  if (speed) {
+    url += `&speed=${encodeURIComponent(speed)}`;
+  }
+  return url;
 };

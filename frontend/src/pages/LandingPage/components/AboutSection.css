@@ -2,24 +2,30 @@
   margin-bottom: 140px;
 }
 
-.section-title {
-  font-family: 'Anybody', sans-serif;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  font-weight: 800;
-  line-height: 1.25;
-  color: #ff0000;
-  margin-bottom: 24px;
+.about-section .section-title {
+  font-family: var(--font-inter);
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: #ffffff;
+  letter-spacing: -0.015em;
+  margin-bottom: 28px;
+  text-align: center;
 }
 
 .about-content {
-  font-family: 'Inter', sans-serif;
-  max-width: 720px;
+  font-family: var(--font-inter);
+  max-width: 740px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  font-size: 1rem;
-  line-height: 1.55;
-  color: #ffffff;
-  font-weight: 300;
+  gap: 20px;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-muted);
+  font-weight: 350;
+}
+
+.about-content p {
+  margin: 0;
 }

@@ -1,22 +1,62 @@
-/* -------------------------------------------------- */
-/* SIDEBAR                                            */
-/* -------------------------------------------------- */
 .sidebar {
-  width: 240px;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #fff;
+  width: 260px;
+  height: calc(100vh - 24px);
+  margin: 12px 0 12px 12px;
+  background: #09090b;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
   box-sizing: border-box;
   overflow: hidden;
-  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+}
+
+.sidebar.collapsed {
+  width: 64px;
+  padding: 16px 10px;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-header {
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.sidebar.collapsed .sidebar-actions {
+  width: 100%;
+  align-items: center;
+}
+
+.sidebar.collapsed .new-chat-btn,
+.sidebar.collapsed .search-chat-btn {
+  justify-content: center;
+  padding: 10px;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar.collapsed .reset-btn {
+  padding: 10px;
+  width: 42px;
+  height: 42px;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .sidebar-header {
@@ -25,280 +65,378 @@
   justify-content: space-between;
   margin-bottom: 20px;
   width: 100%;
-  transition: all 0.3s ease;
 }
 
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
+.sidebar-logo {
+  font-family: var(--font-audiowide);
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--brand-red);
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-shadow: 0 0 16px rgba(255, 51, 68, 0.4);
 }
 
-.brand-logo {
-  width: 30px;
-  height: 30px;
-  min-width: 24px; /* Prevents flexbox from squishing the logo */
-  object-fit: contain;
+.sidebar-logo span {
+  color: var(--text-light);
+  opacity: 0.8;
+  font-size: 1.1rem;
 }
 
-.brand-title {
-  font-size: 20px; 
-  font-weight: 100;
-  background: linear-gradient(90deg, #d67a53, #3b82f6, #06b6d4); 
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text; 
-  color: transparent; 
-  font-family: 'Audiowide', cursive;
-}
-
-/* Action Buttons */
-.new-chat-btn,
-.reset-btn {
-  border-radius: 8px;
-  font-size: 0.75rem;
-  padding: 0.6rem;
+.collapse-btn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.collapse-btn:hover {
+  color: #ffffff;
+}
+
+.desktop-only { display: flex; }
+.mobile-only { display: none; }
+
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  width: 100%;
 }
 
 .new-chat-btn {
-  background: transparent;
-  color: #fff;
-  margin-bottom: 12px;
-  justify-content: flex-start !important;
-  padding-left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .new-chat-btn:hover {
-  background-color: #29292a;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.btn-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain; 
-  flex-shrink: 0;      
-}
-
-.toggle-icon {
-  width: 15px;
-  height: 15px;
-  object-fit: contain;
-  display: block;
-}
-
-.reset-btn {
-  background-color: #850000;
-  color: #ffffff;
-  border: none;
-  margin-top: auto !important; /* Pushes reset button to the bottom */
-  flex-shrink: 0;
-}
-
-.reset-btn:hover {
-  background-color: #540000;
-}
-
-/* -------------------------------------------------- */
-/* RECENTS DROPDOWN & HISTORY LIST                    */
-/* -------------------------------------------------- */
-.history-summary {
+.studio-3d-btn {
   display: flex;
   align-items: center;
-  gap: 6px; /* Keeps the arrow right next to "Recents" */
-  padding: 8px 12px; /* Aligns left edge with .history-item */
-  color: #9aa0a6; /* Muted gray label color */
-  font-size: 0.85rem;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #d1d5db;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  user-select: none;
-  transition: color 0.2s ease;
-  margin-top: 4px;
-  box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
-.history-summary:hover {
-  color: #e8eaed;
+.studio-3d-btn:hover {
+  background: rgba(255, 51, 68, 0.08);
+  border-color: rgba(255, 51, 68, 0.3);
+  color: #ffffff;
 }
 
-.history-summary .chevron-icon {
-  transition: transform 0.2s ease;
-  color: #9aa0a6;
+.studio-3d-btn .box-icon {
+  color: var(--brand-red, #ff3344);
 }
 
-.history-summary .chevron-icon.open {
-  transform: rotate(180deg);
+.search-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 12px;
+  cursor: pointer;
 }
 
-.history-list {
+.search-chat-btn:hover {
+  color: #ffffff;
+}
+
+/* -------------------------------------------------- */
+/* COLLAPSIBLE RECENTS SECTION                        */
+/* -------------------------------------------------- */
+.sidebar-recents-section {
   flex: 1;
+  overflow-y: auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  overflow-y: auto;
-  min-height: 0; /* Critical: allows scrolling inside flex container */
-  padding: 4px 0;
 }
 
-.history-accordion {
-  display: grid;
-  grid-template-rows: 0fr; /* Collapsed state height */
-  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.25s ease-in-out;
-  opacity: 0;
-}
-
-.history-accordion.open {
-  grid-template-rows: 1fr; /* Expanded state height */
-  opacity: 1;
-}
-
-/* Inner container required for CSS Grid height trick */
-.history-accordion-inner {
-  overflow: hidden;
-}
-
-.history-item {
-  background: transparent;
-  color: #e8eaed;
-  border: none;
-  text-align: left;
-  padding: 10px 15px;
-  width: 100%;
-  cursor: pointer;
-  border-radius: 10px; /* Pill-shaped item background on hover */
-  font-size: 13px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
+/* Clickable Header Button */
+.recents-header-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-sizing: border-box;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #71717a;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
 }
 
-.history-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+.recents-header-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
 }
 
-.history-text {
+.recents-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Arrow Icon Transition */
+.recents-arrow {
+  color: #71717a;
+  transition: transform 0.2s ease;
+}
+
+.recents-arrow.open {
+  transform: rotate(0deg);
+}
+
+.recents-arrow.closed {
+  transform: rotate(-90deg);
+}
+
+/* Collapsible List Container */
+.recents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.no-recents {
+  font-size: 0.78rem;
+  color: #52525b;
+  padding: 8px 10px;
+  font-style: italic;
+}
+
+.recent-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: #a1a1aa;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.recent-item:hover, .recent-item.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.recent-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 400;
+  flex: 1;
+  margin-right: 6px;
 }
 
-/* -------------------------------------------------- */
-/* COLLAPSED STATE (Vertical Stacking Mode)           */
-/* -------------------------------------------------- */
-.sidebar.collapsed {
-  width: 55px;
-  padding: 16px 8px;
+.menu-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
 }
 
-.sidebar.collapsed .brand-title,
-.sidebar.collapsed .btn-text,
-.sidebar.collapsed .history-text {
-  display: none !important;
+.recent-item:hover .menu-btn {
+  opacity: 1;
 }
 
-/* Stack Logo and Toggle Icon vertically */
-.sidebar.collapsed .sidebar-header {
-  flex-direction: column;
+.menu-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.item-dropdown-menu {
+  position: absolute;
+  right: 10px;
+  top: 32px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.delete-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--brand-red-light);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.delete-action-btn:hover {
+  background: var(--brand-red-subtle);
+  color: #ffffff;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  width: 100%;
+}
+
+.reset-btn {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.sidebar.collapsed .sidebar-brand {
-  gap: 0;
-  justify-content: center;
-}
-
-.sidebar.collapsed .history-item,
-.sidebar.collapsed .new-chat-btn,
-.sidebar.collapsed .reset-btn {
-  justify-content: center;
+  gap: 8px;
+  width: 100%;
   padding: 10px;
+  background: var(--brand-red-subtle);
+  border: 1px solid var(--brand-red-border);
+  border-radius: 8px;
+  color: var(--brand-red-light);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
-/* Hide entire history section & header when collapsed */
-.sidebar.collapsed .history-summary,
-.sidebar.collapsed .history-list,
-.sidebar.collapsed .history-accordion {
-  display: none !important;
+.reset-btn:hover {
+  background: var(--brand-red);
+  border-color: var(--brand-red);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 51, 68, 0.4);
 }
 
-/* -------------------------------------------------- */
-/* MOBILE OVERRIDES FOR SIDEBAR                       */
-/* -------------------------------------------------- */
+/* ================================================== */
+/* MOBILE OVERLAY & DRAWER STYLES                      */
+/* ================================================== */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex !important; }
+
+  /* Dark Backdrop over ChatPanel */
+  .sidebar-backdrop {
+    position: fixed !important;
     top: 0;
     left: 0;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9998 !important;
+  }
+
+  /* Fixed Floating Drawer on top of ChatPanel */
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
     width: 280px !important;
-    border-radius: 0 20px 20px 0;
-    margin: 0;
-    transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 100;
+    max-width: 85vw !important;
+    margin: 0 !important;
+    border-radius: 0 16px 16px 0 !important;
+    z-index: 9999 !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8) !important;
+    
+    /* Off-screen by default */
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* Slide in on top when open */
+  .sidebar.mobile-open {
+    transform: translateX(0) !important;
+    width: 280px !important;
     padding: 16px !important;
-    background: #0f0f0f;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex !important;
-    flex-direction: column !important;
-    box-sizing: border-box !important;
+    align-items: stretch !important;
   }
 
-  .sidebar .sidebar-header {
+  /* Ensure text & full layout stay intact when open on mobile */
+  .sidebar.mobile-open .sidebar-header {
     flex-direction: row !important;
-    justify-content: space-between !important;
     gap: 0 !important;
-    flex-shrink: 0 !important;
+    margin-bottom: 20px !important;
   }
 
-  .sidebar .new-chat-btn {
-    flex-shrink: 0 !important;
+  .sidebar.mobile-open .sidebar-logo {
+    font-size: 1.4rem !important;
+    text-align: left !important;
+  }
+
+  .sidebar.mobile-open .sidebar-actions,
+  .sidebar.mobile-open .sidebar-footer {
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  .sidebar.mobile-open .new-chat-btn,
+  .sidebar.mobile-open .search-chat-btn {
     justify-content: flex-start !important;
+    padding: 10px 14px !important;
+    width: 100% !important;
+    height: auto !important;
+    border-radius: 8px !important;
   }
 
-  .sidebar .history-list {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-  }
-
-  .sidebar .reset-btn {
-    flex-shrink: 0 !important;
-    justify-content: flex-start !important;
-    margin-top: auto !important;
-    margin-bottom: 4px !important;
-  }
-
-  .sidebar .brand-title,
-  .sidebar .btn-text,
-  .sidebar .history-text {
-    display: inline !important;
-  }
-
-  .sidebar .history-item {
-    justify-content: flex-start !important;
-  }
-
-  .sidebar.collapsed {
-    transform: translateX(-100%);
+  .sidebar.mobile-open .reset-btn {
+    padding: 10px !important;
+    width: 100% !important;
+    height: auto !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
   }
 }
