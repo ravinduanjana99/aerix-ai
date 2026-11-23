@@ -1,67 +1,67 @@
-# AERIX – Groq LLaMA-4-Scout PDF Assistant
+# AERIX – Modular FastAPI Backend
 
-AERIX is an AI-powered telecom customer support assistant that leverages **Retrieval-Augmented Generation (RAG)** with PDFs as knowledge sources. It uses **FastAPI** as the backend, **Groq LLaMA-4-Scout** for language modeling, **FAISS** for vector search, **MongoDB** for session storage, and **SentenceTransformers** for embedding generation.
-
----
-
-⚠️ Note: This chat application is currently optimized for desktop screens and larger tablets. Mobile support is not fully implemented, and the interface may not display correctly on smaller devices.
-
-## Features
-
-- Load multiple PDFs as a knowledge base.
-- Chunk PDF content and compute embeddings using SentenceTransformers.
-- Build a FAISS vector index for semantic search.
-- Groq LLaMA-4-Scout model integration for generating responses.
-- MongoDB-based chat session storage.
-- REST API endpoints for:
-  - Chat (`/chat`)
-  - Fetch session history (`/history/{session_id}`)
-  - Delete session (`/history/{session_id}`)
-  - List all sessions (`/sessions`)
-- Context-aware responses using retrieved PDF content.
-- CORS-enabled for local frontend integration.
+The AERIX backend is a modular **FastAPI** service engineered for high-performance AI interactions, combining multi-turn conversational memory, PDF-based semantic RAG via FAISS, real-time web search via DuckDuckGo, and encyclopedic facts from Wikipedia.
 
 ---
 
-## Prerequisites
+## 🏗️ Architecture & Modules
 
-- Python 3.10+
-- MongoDB instance
-- Groq API Key
-- Local folder `knowledge_base_pdfs` with PDF files for the knowledge base.
+The backend is organized into decoupled layers:
+
+```text
+backend/
+├── app.py                      # Application entrypoint & CORS middleware setup
+├── core/
+│   ├── __init__.py
+│   └── config.py               # Pydantic Settings, environment variables & paths
+├── api/
+│   ├── __init__.py
+│   ├── schemas.py              # Pydantic validation models (ChatRequest, ChatResponse)
+│   └── routes.py               # REST API endpoints (/chat, /history, /sessions, /health)
+├── services/
+│   ├── __init__.py
+│   ├── storage_service.py      # Resilient storage (MongoDB Atlas with in-memory fallback)
+│   ├── rag_service.py          # PDF loader, SentenceTransformers embeddings & FAISS vector index
+│   ├── search_service.py       # Live DuckDuckGo web search & Wikipedia lookup
+│   └── llm_service.py          # Groq API client, model fallback chain & Sinhala prompt synthesis
+├── knowledge_base_pdfs/        # Domain PDF documents
+├── requirements.txt            # Python dependencies
+└── .env                        # Local environment configuration
+```
 
 ---
 
-## Installation
+## ⚡ Features
 
-1. **Clone the repository**
+1. **Tri-Source Knowledge Retrieval**:
+   - **Local PDFs**: Chunks and indexes PDFs using `sentence-transformers/all-MiniLM-L6-v2` and `faiss-cpu`.
+   - **DuckDuckGo Search (`ddgs`)**: Live web search with zero API key requirement.
+   - **Wikipedia API (`wikipedia`)**: Detailed encyclopedic summaries for factual inquiries.
+2. **Multi-Turn Session Memory**:
+   - Maintains rolling conversational memory (`last 10 turns`) so follow-up queries, pronouns, and corrections work seamlessly.
+3. **Sinhala & Singlish Fluency**:
+   - Explicit prompt instructions for natural Subject-Object-Verb (SOV) Sinhala grammar, respectful tone, and clear technical terms.
+4. **Resilient Session Storage**:
+   - Automatically connects to **MongoDB Atlas** when configured, and falls back to an **in-memory thread-safe store** if offline.
 
+---
 
-2. **Create a virtual environment**
-python -m venv venv
+## 🚀 Quickstart
 
-3. **Activate the virtual environment**
-venv\Scripts\activate
+1. **Activate Virtual Environment**:
+   ```powershell
+   .\venv\Scripts\Activate.ps1
+   ```
 
-4. **Install dependencies**
-pip install -r requirements.txt
+2. **Install Dependencies**:
+   ```powershell
+   pip install -r requirements.txt
+   ```
 
-5. **Set environment variables(.env)**
-GROQ_API_KEY=<your-groq-api-key>
-MONGODB_URI=<your-mongodb-connection-string>
-MONGODB_DB=<your-database-name>
+3. **Run Server**:
+   ```powershell
+   uvicorn app:app --reload --port 8000
+   ```
 
-6. **Add PDFs**
-knowledge_base_pdfs/
-
-7. **Run FastAPI server**
-uvicorn app:app --reload
-
-
-## Project Structure
-.
-├── app.py                # FastAPI backend
-├── knowledge_base_pdfs/  # Folder containing PDF knowledge base
-├── .env                  # Environment variables
-├── requirements.txt      # Python dependencies
-└── README.md             # This file
+4. **Verify Health**:
+   Open `http://localhost:8000/health` or browse interactive documentation at `http://localhost:8000/docs`.
