@@ -2,6 +2,10 @@ import io
 import re
 from typing import Optional
 
+import httpx
+
+from core.config import settings
+
 try:
     import edge_tts
 except ImportError:
@@ -11,6 +15,13 @@ try:
     from gtts import gTTS
 except ImportError:
     gTTS = None
+
+# ElevenLabs English Studio Voices (Sarah, George, River)
+ELEVENLABS_VOICES = {
+    "female": settings.ELEVENLABS_VOICE_ID or "EXAVITQu4vr4xnSDxMaL",
+    "male": "JBFqnCBsd6RMkjVDRZzb",
+    "warm": "SAz9YHcvj6GT2YYXdXww",
+}
 
 # Available State-of-the-Art Neural Voices
 VOICES = {
@@ -351,6 +362,36 @@ def prepare_text_for_speech(text: str, is_sinhala: bool = True) -> str:
     return t
 
 
+async def synthesize_elevenlabs(text: str, voice_id: str) -> bytes:
+    """Synthesize English speech via ElevenLabs low-latency API."""
+    api_key = settings.ELEVENLABS_API_KEY
+    if not api_key:
+        return b""
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "xi-api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+    }
+    payload = {
+        "text": text,
+        "model_id": settings.ELEVENLABS_MODEL_ID or "eleven_flash_v2_5",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.78,
+            "style": 0.2,
+            "use_speaker_boost": True,
+        },
+    }
+    params = {"output_format": "mp3_44100_128"}
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(url, headers=headers, json=payload, params=params)
+        resp.raise_for_status()
+        return resp.content
+
+
 async def synthesize_speech(
     text: str,
     lang: str = "si",
@@ -358,8 +399,9 @@ async def synthesize_speech(
     speed: Optional[str] = None
 ) -> bytes:
     """
-    Synthesizes speech using Microsoft Neural Voices with enthusiastic, explaining intonation,
-    human breathing pauses, and authentic cadence for both Sinhala and English.
+    Synthesizes speech using hybrid neural routing:
+    - English: ElevenLabs (eleven_flash_v2_5) primary, falling back to Microsoft Neural (edge-tts) -> gTTS.
+    - Sinhala: Microsoft Neural (si-LK-ThiliniNeural / SameeraNeural) primary -> gTTS.
     """
     # Strict language determination:
     # If lang is explicitly requested as English ('en', 'en-US', etc.) -> English voice model.
@@ -385,6 +427,16 @@ async def synthesize_speech(
 
     gender_key = "male" if gender.lower() == "male" else ("warm" if gender.lower() == "warm" else "female")
 
+    # 1. Primary for English: ElevenLabs (ultra-realistic neural voice)
+    if not is_sinhala and settings.ELEVENLABS_API_KEY:
+        el_voice_id = ELEVENLABS_VOICES.get(gender_key, ELEVENLABS_VOICES["female"])
+        try:
+            audio_bytes = await synthesize_elevenlabs(spoken_chunk, el_voice_id)
+            if audio_bytes:
+                return audio_bytes
+        except Exception as err:
+            print(f"[ElevenLabs Voice Service] Falling back to edge-tts: {err}")
+
     voice = VOICES[lang_key].get(gender_key, VOICES[lang_key]["female"])
 
     # Natural Native Tone & Pitch Calibration:
@@ -398,7 +450,7 @@ async def synthesize_speech(
     else:
         rate = speed
 
-    # 1. Primary: Microsoft Neural Voice Engine
+    # 2. Primary for Sinhala / Fallback for English: Microsoft Neural Voice Engine
     if edge_tts is not None:
         try:
             comm = edge_tts.Communicate(spoken_chunk, voice, rate=rate, pitch=pitch)
@@ -412,7 +464,7 @@ async def synthesize_speech(
         except Exception as err:
             print(f"[Neural Voice Service] edge-tts error, falling back to gTTS: {err}")
 
-    # 2. Fallback: gTTS
+    # 3. Final Fallback: gTTS
     if gTTS:
         try:
             tts = gTTS(text=spoken_chunk, lang="si" if is_sinhala else "en", slow=False)

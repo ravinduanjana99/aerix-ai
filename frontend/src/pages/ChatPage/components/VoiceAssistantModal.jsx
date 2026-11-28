@@ -9,8 +9,63 @@ import {
   Send,
   VolumeX
 } from "lucide-react";
-import { getSpeechAudioUrl } from "../../../api/chatApi";
+import { getSpeechAudioUrl, getLiveVoiceWsUrl } from "../../../api/chatApi";
 import "./VoiceAssistantModal.css";
+
+const GEMINI_VOICES = ["Aoede", "Zephyr", "Puck", "Charon", "Kore", "Fenrir"];
+
+function downsampleTo16kPCM(float32Buffer, inputSampleRate) {
+  if (inputSampleRate === 16000) {
+    const pcm = new Int16Array(float32Buffer.length);
+    for (let i = 0; i < float32Buffer.length; i++) {
+      const s = Math.max(-1, Math.min(1, float32Buffer[i]));
+      pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return pcm;
+  }
+  const ratio = inputSampleRate / 16000;
+  const newLength = Math.round(float32Buffer.length / ratio);
+  const result = new Int16Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    const start = Math.round(i * ratio);
+    const end = Math.min(Math.round((i + 1) * ratio), float32Buffer.length);
+    let sum = 0;
+    let count = 0;
+    for (let j = start; j < end; j++) {
+      sum += float32Buffer[j];
+      count++;
+    }
+    const avg = count > 0 ? sum / count : 0;
+    const s = Math.max(-1, Math.min(1, avg));
+    result[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return result;
+}
+
+function int16ToBase64(int16Array) {
+  const bytes = new Uint8Array(int16Array.buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function base64ToFloat32(base64Str) {
+  const binary = atob(base64Str);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const int16 = new Int16Array(bytes.buffer);
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) {
+    float32[i] = int16[i] / 32768;
+  }
+  return float32;
+}
 
 export default function VoiceAssistantModal({
   isOpen,
@@ -18,6 +73,12 @@ export default function VoiceAssistantModal({
   onSendVoiceMessage,
 }) {
   const [status, setStatus] = useState("idle"); // 'idle' | 'listening' | 'thinking' | 'speaking' | 'error'
+  const [voiceEngine, setVoiceEngine] = useState(() => {
+    return localStorage.getItem("aerix_voice_engine") || "live"; // 'live' | 'classic'
+  });
+  const [liveVoice, setLiveVoice] = useState(() => {
+    return localStorage.getItem("aerix_gemini_voice") || "Aoede";
+  });
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem("aerix_voice_language") || "si-LK";
   }); // 'si-LK' | 'en-US'
@@ -30,7 +91,7 @@ export default function VoiceAssistantModal({
   const [volumeLevel, setVolumeLevel] = useState(0); // 0 to 100
   const [frequencyBars, setFrequencyBars] = useState([4, 4, 4, 4, 4, 4, 4]);
 
-  // Audio & Recognition Refs
+  // Classic Audio & Recognition Refs
   const recognitionRef = useRef(null);
   const audioPlayerRef = useRef(null);
   const isListeningRef = useRef(false);
@@ -44,7 +105,233 @@ export default function VoiceAssistantModal({
   const micStreamRef = useRef(null);
   const animationFrameRef = useRef(null);
 
-  // Stop any active audio playback
+  // Gemini Live WebSocket & PCM Audio Refs
+  const liveWsRef = useRef(null);
+  const liveMicCtxRef = useRef(null);
+  const liveProcessorRef = useRef(null);
+  const liveMicStreamRef = useRef(null);
+  const livePlayCtxRef = useRef(null);
+  const nextPlayTimeRef = useRef(0);
+  const activeSourcesRef = useRef([]);
+  const isMutedRef = useRef(false);
+  const liveAnalyserFrameRef = useRef(null);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
+  // Stop Gemini Live playback queue immediately (for barge-in or close)
+  const stopLivePlayback = useCallback(() => {
+    activeSourcesRef.current.forEach((src) => {
+      try {
+        src.stop();
+      } catch (_) {}
+    });
+    activeSourcesRef.current = [];
+    nextPlayTimeRef.current = 0;
+  }, []);
+
+  // Tear down Gemini Live WebSocket + Mic + Playback Contexts
+  const stopLiveSession = useCallback(() => {
+    stopLivePlayback();
+
+    if (liveAnalyserFrameRef.current) {
+      cancelAnimationFrame(liveAnalyserFrameRef.current);
+      liveAnalyserFrameRef.current = null;
+    }
+    if (liveProcessorRef.current) {
+      try {
+        liveProcessorRef.current.disconnect();
+      } catch (_) {}
+      liveProcessorRef.current = null;
+    }
+    if (liveMicStreamRef.current) {
+      liveMicStreamRef.current.getTracks().forEach((t) => t.stop());
+      liveMicStreamRef.current = null;
+    }
+    if (liveMicCtxRef.current && liveMicCtxRef.current.state !== "closed") {
+      liveMicCtxRef.current.close().catch(() => {});
+      liveMicCtxRef.current = null;
+    }
+    if (livePlayCtxRef.current && livePlayCtxRef.current.state !== "closed") {
+      livePlayCtxRef.current.close().catch(() => {});
+      livePlayCtxRef.current = null;
+    }
+    if (liveWsRef.current) {
+      try {
+        liveWsRef.current.close();
+      } catch (_) {}
+      liveWsRef.current = null;
+    }
+    setVolumeLevel(0);
+    setFrequencyBars([4, 4, 4, 4, 4, 4, 4]);
+  }, [stopLivePlayback]);
+
+  // Schedule 24kHz PCM chunk playback for Gemini Live
+  const enqueueLiveAudioChunk = useCallback((base64Pcm) => {
+    try {
+      if (!livePlayCtxRef.current || livePlayCtxRef.current.state === "closed") {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        livePlayCtxRef.current = new AudioCtx({ sampleRate: 24000 });
+        nextPlayTimeRef.current = 0;
+      }
+      const ctx = livePlayCtxRef.current;
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+
+      const floatSamples = base64ToFloat32(base64Pcm);
+      const audioBuffer = ctx.createBuffer(1, floatSamples.length, 24000);
+      audioBuffer.copyToChannel(floatSamples, 0);
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
+
+      const startAt = Math.max(ctx.currentTime + 0.02, nextPlayTimeRef.current);
+      source.start(startAt);
+      nextPlayTimeRef.current = startAt + audioBuffer.duration;
+
+      activeSourcesRef.current.push(source);
+      setStatus("speaking");
+
+      source.onended = () => {
+        activeSourcesRef.current = activeSourcesRef.current.filter((s) => s !== source);
+        if (
+          activeSourcesRef.current.length === 0 &&
+          livePlayCtxRef.current &&
+          livePlayCtxRef.current.currentTime >= nextPlayTimeRef.current - 0.08
+        ) {
+          setStatus(isMutedRef.current ? "idle" : "listening");
+        }
+      };
+    } catch (err) {
+      console.warn("[Gemini Live Audio Playback Error]:", err);
+    }
+  }, []);
+
+  // Start Gemini Live Bidirectional Session
+  const startLiveSession = useCallback(async (targetLang = null, targetVoice = null) => {
+    stopLiveSession();
+    setErrorMessage("");
+    setStatus("thinking");
+
+    const activeLang = targetLang || languageRef.current || language;
+    const activeVoice = targetVoice || liveVoice;
+    const wsUrl = getLiveVoiceWsUrl(activeLang, activeVoice);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      liveMicStreamRef.current = stream;
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const micCtx = new AudioCtx();
+      liveMicCtxRef.current = micCtx;
+
+      const source = micCtx.createMediaStreamSource(stream);
+      const analyser = micCtx.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.65;
+      source.connect(analyser);
+
+      const processor = micCtx.createScriptProcessor(4096, 1, 1);
+      liveProcessorRef.current = processor;
+
+      // Silent sink so ScriptProcessorNode fires without mic feedback
+      const silentGain = micCtx.createGain();
+      silentGain.gain.value = 0;
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(micCtx.destination);
+
+      const ws = new WebSocket(wsUrl);
+      liveWsRef.current = ws;
+
+      ws.onopen = () => {
+        setStatus(isMutedRef.current ? "idle" : "listening");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "ready") {
+            setStatus(isMutedRef.current ? "idle" : "listening");
+          } else if (msg.type === "audio" && msg.data) {
+            enqueueLiveAudioChunk(msg.data);
+          } else if (msg.type === "input_transcript" && msg.text) {
+            setTranscript((prev) => (prev ? `${prev} ${msg.text}` : msg.text));
+          } else if (msg.type === "output_transcript" && msg.text) {
+            setAiResponse((prev) => (prev ? `${prev}${msg.text}` : msg.text));
+          } else if (msg.type === "interrupted") {
+            stopLivePlayback();
+            setAiResponse("");
+            setStatus("listening");
+          } else if (msg.type === "turn_complete") {
+            setTranscript("");
+          } else if (msg.type === "error") {
+            setErrorMessage(msg.message || "Gemini Live connection error.");
+            setStatus("error");
+          }
+        } catch (err) {
+          console.warn("[Gemini Live WS Parse]:", err);
+        }
+      };
+
+      ws.onerror = () => {
+        setErrorMessage("Could not connect to Gemini Live. Switching or retry available.");
+        setStatus("error");
+      };
+
+      ws.onclose = () => {
+        if (liveWsRef.current === ws) {
+          liveWsRef.current = null;
+        }
+      };
+
+      processor.onaudioprocess = (e) => {
+        if (isMutedRef.current || !ws || ws.readyState !== WebSocket.OPEN) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = downsampleTo16kPCM(inputData, micCtx.sampleRate);
+        const b64 = int16ToBase64(pcm16);
+        ws.send(JSON.stringify({ type: "audio", data: b64 }));
+      };
+
+      // Mic visualizer loop
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const updateBars = () => {
+        if (!liveMicCtxRef.current) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        const avg = sum / bufferLength;
+        setVolumeLevel(Math.min(100, Math.round((avg / 120) * 100)));
+        setFrequencyBars([
+          Math.max(6, Math.min(100, Math.round((dataArray[2] || 0) / 2.2))),
+          Math.max(8, Math.min(100, Math.round((dataArray[5] || 0) / 2.0))),
+          Math.max(12, Math.min(100, Math.round((dataArray[9] || 0) / 1.8))),
+          Math.max(15, Math.min(100, Math.round((dataArray[13] || 0) / 1.7))),
+          Math.max(12, Math.min(100, Math.round((dataArray[17] || 0) / 1.8))),
+          Math.max(8, Math.min(100, Math.round((dataArray[21] || 0) / 2.0))),
+          Math.max(6, Math.min(100, Math.round((dataArray[25] || 0) / 2.2))),
+        ]);
+        liveAnalyserFrameRef.current = requestAnimationFrame(updateBars);
+      };
+      updateBars();
+    } catch (err) {
+      console.error("[Gemini Live Init Error]:", err);
+      setErrorMessage("Microphone permission denied or unavailable.");
+      setStatus("error");
+    }
+  }, [language, liveVoice, stopLiveSession, stopLivePlayback, enqueueLiveAudioChunk]);
+
+  // Stop any active classic audio playback
   const stopAudio = useCallback(() => {
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
@@ -56,7 +343,7 @@ export default function VoiceAssistantModal({
     }
   }, []);
 
-  // Stop Web Audio API Visualizer
+  // Stop Web Audio API Visualizer (Classic)
   const stopAudioVisualizer = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -74,7 +361,7 @@ export default function VoiceAssistantModal({
     setFrequencyBars([4, 4, 4, 4, 4, 4, 4]);
   }, []);
 
-  // Start Real Microphone Web Audio Analyser
+  // Start Real Microphone Web Audio Analyser (Classic)
   const startAudioVisualizer = useCallback(async () => {
     stopAudioVisualizer();
     try {
@@ -107,7 +394,6 @@ export default function VoiceAssistantModal({
         const normalizedVol = Math.min(100, Math.round((avg / 120) * 100));
         setVolumeLevel(normalizedVol);
 
-        // 7 sleek reactive frequency bars
         const bars = [
           Math.max(6, Math.min(100, Math.round((dataArray[2] || 0) / 2.2))),
           Math.max(8, Math.min(100, Math.round((dataArray[5] || 0) / 2.0))),
@@ -128,7 +414,7 @@ export default function VoiceAssistantModal({
     }
   }, [stopAudioVisualizer]);
 
-  // Stop Speech Recognition
+  // Stop Classic Speech Recognition
   const stopRecognition = useCallback(() => {
     isListeningRef.current = false;
     if (silenceTimerRef.current) {
@@ -138,13 +424,11 @@ export default function VoiceAssistantModal({
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-      } catch (err) {
-        // Ignore abort errors
-      }
+      } catch (err) {}
     }
   }, []);
 
-  // Send Query to AERIX Backend
+  // Classic: Send Query to AERIX Backend
   const submitQuery = useCallback(async (userText, overrideLang = null) => {
     const textToSubmit = (userText || currentSpokenTextRef.current || "").trim();
     if (!textToSubmit) return;
@@ -178,7 +462,7 @@ export default function VoiceAssistantModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, onSendVoiceMessage, stopAudioVisualizer, stopRecognition]);
 
-  // Speak AI Response with Natural Fallback
+  // Classic: Speak AI Response (ElevenLabs / Edge-TTS)
   const speakResponse = useCallback((text, explicitLang = null) => {
     stopAudio();
     setStatus("speaking");
@@ -231,25 +515,11 @@ export default function VoiceAssistantModal({
       }
     };
 
-    audio.play().catch(() => {
-      if ("speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langCode === "en" ? "en-US" : "si-LK";
-        utterance.onend = () => {
-          if (shouldContinueLoopRef.current && !isMuted) {
-            setStatus("listening");
-            startListening(languageRef.current);
-          } else {
-            setStatus("idle");
-          }
-        };
-        window.speechSynthesis.speak(utterance);
-      }
-    });
+    audio.play().catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, isMuted, stopAudio]);
 
-  // Start Speech Recognition
+  // Classic: Start Speech Recognition
   const startListening = useCallback((targetLang = null) => {
     if (isMuted) return;
     stopAudio();
@@ -258,7 +528,7 @@ export default function VoiceAssistantModal({
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setErrorMessage("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+      setErrorMessage("Speech Recognition is not supported in this browser. Switch to Live mode or use Chrome/Edge.");
       setStatus("error");
       return;
     }
@@ -302,11 +572,7 @@ export default function VoiceAssistantModal({
           setTranscript(latestText);
         }
 
-        if (interim) {
-          setInterimText(interim);
-        } else {
-          setInterimText("");
-        }
+        setInterimText(interim || "");
 
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current);
@@ -337,9 +603,7 @@ export default function VoiceAssistantModal({
         if (isListeningRef.current && shouldContinueLoopRef.current && !isMuted && status === "listening") {
           try {
             recognition.start();
-          } catch (e) {
-            // Ignore restart errors
-          }
+          } catch (e) {}
         }
       };
 
@@ -354,6 +618,18 @@ export default function VoiceAssistantModal({
 
   // Toggle Mute / Mic
   const handleToggleMute = () => {
+    if (voiceEngine === "live") {
+      if (isMuted) {
+        setIsMuted(false);
+        setStatus("listening");
+      } else {
+        setIsMuted(true);
+        stopLivePlayback();
+        setStatus("idle");
+      }
+      return;
+    }
+
     if (isMuted) {
       setIsMuted(false);
       startListening(languageRef.current);
@@ -366,6 +642,48 @@ export default function VoiceAssistantModal({
     }
   };
 
+  // Switch Engine (Gemini Live <-> Classic ElevenLabs/Edge-TTS)
+  const switchVoiceEngine = (newEngine) => {
+    if (newEngine === voiceEngine) return;
+    setVoiceEngine(newEngine);
+    try {
+      localStorage.setItem("aerix_voice_engine", newEngine);
+    } catch (_) {}
+
+    stopLiveSession();
+    stopRecognition();
+    stopAudioVisualizer();
+    stopAudio();
+    setTranscript("");
+    setInterimText("");
+    setAiResponse("");
+    setErrorMessage("");
+    setIsMuted(false);
+
+    setTimeout(() => {
+      if (newEngine === "live") {
+        startLiveSession(languageRef.current, liveVoice);
+      } else {
+        startListening(languageRef.current);
+      }
+    }, 100);
+  };
+
+  // Switch Gemini Live Voice Persona
+  const handleLiveVoiceChange = (e) => {
+    const newVoice = e.target.value;
+    setLiveVoice(newVoice);
+    try {
+      localStorage.setItem("aerix_gemini_voice", newVoice);
+    } catch (_) {}
+
+    if (voiceEngine === "live" && isOpen) {
+      setAiResponse("");
+      setTranscript("");
+      startLiveSession(languageRef.current, newVoice);
+    }
+  };
+
   // Switch Language (Sinhala <-> English)
   const setVoiceLanguage = (newLang) => {
     if (newLang === languageRef.current && newLang === language) return;
@@ -375,6 +693,7 @@ export default function VoiceAssistantModal({
       localStorage.setItem("aerix_voice_language", newLang);
     } catch (e) {}
 
+    stopLiveSession();
     stopAudio();
     stopRecognition();
     stopAudioVisualizer();
@@ -383,9 +702,12 @@ export default function VoiceAssistantModal({
     setAiResponse("");
     currentSpokenTextRef.current = "";
 
-    // Restart recognition immediately with the newly selected language
     setTimeout(() => {
-      startListening(newLang);
+      if (voiceEngine === "live") {
+        startLiveSession(newLang, liveVoice);
+      } else {
+        startListening(newLang);
+      }
     }, 100);
   };
 
@@ -393,7 +715,6 @@ export default function VoiceAssistantModal({
   useEffect(() => {
     if (isOpen) {
       shouldContinueLoopRef.current = true;
-      setStatus("listening");
       setTranscript("");
       setInterimText("");
       setAiResponse("");
@@ -402,12 +723,18 @@ export default function VoiceAssistantModal({
       currentSpokenTextRef.current = "";
 
       const timer = setTimeout(() => {
-        startListening(languageRef.current);
+        if (voiceEngine === "live") {
+          startLiveSession(languageRef.current, liveVoice);
+        } else {
+          setStatus("listening");
+          startListening(languageRef.current);
+        }
       }, 150);
 
       return () => clearTimeout(timer);
     } else {
       shouldContinueLoopRef.current = false;
+      stopLiveSession();
       stopRecognition();
       stopAudioVisualizer();
       stopAudio();
@@ -419,6 +746,7 @@ export default function VoiceAssistantModal({
   // Manual Close
   const handleClose = () => {
     shouldContinueLoopRef.current = false;
+    stopLiveSession();
     stopRecognition();
     stopAudioVisualizer();
     stopAudio();
@@ -441,6 +769,42 @@ export default function VoiceAssistantModal({
           </div>
 
           <div className="voice-header-actions">
+            {/* Engine Switcher [ Live | Classic ] */}
+            <div className="lang-segment-control" title="Voice Engine">
+              <button
+                type="button"
+                className={`lang-pill ${voiceEngine === "live" ? "active" : ""}`}
+                onClick={() => switchVoiceEngine("live")}
+                title="Gemini Live Real-Time Audio"
+              >
+                Live
+              </button>
+              <button
+                type="button"
+                className={`lang-pill ${voiceEngine === "classic" ? "active" : ""}`}
+                onClick={() => switchVoiceEngine("classic")}
+                title="Classic (ElevenLabs / Edge-TTS)"
+              >
+                Classic
+              </button>
+            </div>
+
+            {/* Gemini Voice Selector (when in Live mode) */}
+            {voiceEngine === "live" && (
+              <select
+                className="voice-persona-select"
+                value={liveVoice}
+                onChange={handleLiveVoiceChange}
+                title="Select Gemini Voice"
+              >
+                {GEMINI_VOICES.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            )}
+
             {/* Minimalist Segmented Language Switcher (Sinhala | English) */}
             <div className="lang-segment-control">
               <button
@@ -474,11 +838,9 @@ export default function VoiceAssistantModal({
 
         {/* Center Stage: Minimalist Liquid Bubble Orb */}
         <div className="voice-center-stage">
-          {/* Subtle Ambient Red Waves */}
           <div className={`pulse-ring ring-1 ${status}`}></div>
           <div className={`pulse-ring ring-2 ${status}`}></div>
 
-          {/* LIQUID MOVING BUBBLE ORB */}
           <div 
             className={`liquid-bubble-orb ${status}`}
             style={{
@@ -490,6 +852,15 @@ export default function VoiceAssistantModal({
                 : undefined
             }}
             onClick={() => {
+              if (voiceEngine === "live") {
+                if (status === "speaking") {
+                  stopLivePlayback();
+                  setStatus("listening");
+                } else if (status === "error") {
+                  startLiveSession(languageRef.current, liveVoice);
+                }
+                return;
+              }
               if (status === "speaking") {
                 stopAudio();
                 startListening();
@@ -512,7 +883,6 @@ export default function VoiceAssistantModal({
             </div>
           </div>
 
-          {/* 7 Minimalist Audio Volume Wave Bars */}
           <div className={`mic-equalizer-bars ${status}`}>
             {frequencyBars.map((heightPercent, index) => (
               <span 
@@ -537,9 +907,13 @@ export default function VoiceAssistantModal({
           ) : status === "thinking" ? (
             <div className="voice-thinking-text">
               <span className="red-dot-pulse"></span>
-              {language.startsWith("en") ? "Thinking..." : "සිතමින් පවතී..."}
+              {voiceEngine === "live"
+                ? "Connecting Gemini Live..."
+                : language.startsWith("en")
+                  ? "Thinking..."
+                  : "සිතමින් පවතී..."}
             </div>
-          ) : status === "speaking" ? (
+          ) : status === "speaking" && aiResponse ? (
             <div className="voice-response-text">
               <div className="voice-markdown-content">
                 <ReactMarkdown>{aiResponse}</ReactMarkdown>
@@ -554,7 +928,13 @@ export default function VoiceAssistantModal({
             </div>
           ) : (
             <div className="voice-hint-text">
-              {language.startsWith("en") ? "Speak now, AERIX is listening..." : "කතා කරන්න, AERIX සවන් දෙයි..."}
+              {voiceEngine === "live"
+                ? language.startsWith("en")
+                  ? `Gemini Live (${liveVoice}) active — speak naturally...`
+                  : `Gemini Live (${liveVoice}) සූදානම් — කතා කරන්න...`
+                : language.startsWith("en")
+                  ? "Speak now, AERIX is listening..."
+                  : "කතා කරන්න, AERIX සවන් දෙයි..."}
             </div>
           )}
         </div>
@@ -571,8 +951,7 @@ export default function VoiceAssistantModal({
               {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
             </button>
 
-            {/* Quick send icon if user wants to send immediately */}
-            {status === "listening" && (transcript || currentSpokenTextRef.current) && (
+            {voiceEngine === "classic" && status === "listening" && (transcript || currentSpokenTextRef.current) && (
               <button
                 type="button"
                 className="voice-quick-send-btn"
@@ -583,14 +962,18 @@ export default function VoiceAssistantModal({
               </button>
             )}
 
-            {/* Quick interrupt pill if speaking */}
             {status === "speaking" && (
               <button
                 type="button"
                 className="voice-interrupt-btn"
                 onClick={() => {
-                  stopAudio();
-                  startListening();
+                  if (voiceEngine === "live") {
+                    stopLivePlayback();
+                    setStatus("listening");
+                  } else {
+                    stopAudio();
+                    startListening();
+                  }
                 }}
                 title="Interrupt"
               >

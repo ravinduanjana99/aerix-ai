@@ -2,7 +2,7 @@ import io
 import re
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket
 from fastapi.responses import StreamingResponse
 
 from core.config import settings
@@ -12,6 +12,7 @@ from services.rag_service import retrieve_relevant_chunks, chunks
 from services.search_service import search_duckduckgo, search_wikipedia
 from services.llm_service import call_groq_with_fallback, build_conversation_messages
 from services.voice_service import synthesize_speech
+from services.gemini_live_service import handle_live_websocket
 from services.three_generator_service import generate_3d_scene, PRESET_SCENES
 
 router = APIRouter()
@@ -190,6 +191,16 @@ async def speak_text(
     except Exception as e:
         print(f"[TTS Error] {e}")
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
+
+
+@router.websocket("/ws/voice/live")
+async def voice_live_ws(
+    websocket: WebSocket,
+    lang: str = "en-US",
+    voice: str = "Aoede",
+):
+    """Real-time bidirectional audio stream powered by Gemini Multimodal Live API."""
+    await handle_live_websocket(websocket, lang=lang, voice=voice)
 
 
 @router.get("/3d/presets")

@@ -360,6 +360,7 @@ export default function ChatPage() {
         setInput={setInput}
         onSend={handleSend}
         onEditMessage={handleEditMessage}
+        onNewChat={handleNewChat}
         onToggleSidebar={() => setIsMobileOpen((prev) => !prev)}
       />
     </div>

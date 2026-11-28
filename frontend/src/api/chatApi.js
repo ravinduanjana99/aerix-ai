@@ -35,3 +35,8 @@ export const getSpeechAudioUrl = (text, lang = "si", gender = "female", speed = 
   }
   return url;
 };
+
+export const getLiveVoiceWsUrl = (lang = "en-US", voice = "Aoede") => {
+  const wsBase = API_BASE.replace(/^http/, "ws");
+  return `${wsBase}/ws/voice/live?lang=${encodeURIComponent(lang)}&voice=${encodeURIComponent(voice)}`;
+};

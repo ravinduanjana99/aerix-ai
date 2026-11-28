@@ -13,6 +13,7 @@ export default function ChatPanel({
   setInput,
   onSend,
   onEditMessage,
+  onNewChat,
   onToggleSidebar,
 }) {
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -51,8 +52,11 @@ export default function ChatPanel({
             <button
               type="button"
               className="voice-assistant-badge"
-              onClick={() => setIsVoiceOpen(true)}
-              title="Open Sinhala Voice Assistant"
+              onClick={() => {
+                if (onNewChat) onNewChat();
+                setIsVoiceOpen(true);
+              }}
+              title="Open Voice Assistant (New Chat)"
             >
               <Sparkles size={13} className="voice-badge-icon" />
               <span>Voice Assistant</span>

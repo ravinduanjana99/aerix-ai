@@ -158,6 +158,24 @@
   color: #d4d4d8;
 }
 
+.voice-persona-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
+  color: #e4e4e7;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.voice-persona-select option {
+  background: #121216;
+  color: #f4f4f5;
+}
+
 .lang-pill.active {
   background: var(--brand-red);
   color: #ffffff;

@@ -37,6 +37,17 @@ class Settings:
     KB_API_URL: str = os.getenv("KB_API_URL", "")
     KB_API_KEY: str = os.getenv("KB_API_KEY", "")
 
+    # ElevenLabs Neural Voice Configuration (English Primary)
+    ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
+    ELEVENLABS_VOICE_ID: str = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+    ELEVENLABS_MODEL_ID: str = os.getenv("ELEVENLABS_MODEL_ID", "eleven_flash_v2_5")
+
+    # Gemini Multimodal Live API Configuration
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_LIVE_MODEL: str = os.getenv(
+        "GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025"
+    )
+
     # CORS Allowed Origins
     CORS_ORIGINS: list = [
         "http://localhost:3000",
