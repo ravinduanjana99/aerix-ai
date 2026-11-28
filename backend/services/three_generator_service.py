@@ -1,40 +1,47 @@
 import json
 import re
 from typing import Dict, Any, List
+from google import genai
+from google.genai import types
+
+from core.config import settings
 from services.llm_service import call_groq_with_fallback
 
 SYSTEM_INSTRUCTION_3D = """
 You are AERIX 3D Studio, an elite Three.js WebGL Graphics Engineer.
-Your mission is to generate production-grade, stunning, interactive procedural 3D scenes in pure JavaScript (Three.js) based on the user's prompt.
+Your mission is to generate production-grade, clean, geometrically accurate procedural 3D models in pure JavaScript (Three.js) based on the user's prompt.
 
 CORE ARCHITECTURAL RULES:
 1. Environment Parameters:
    The code executes inside a function with these parameters in scope: (scene, camera, renderer, THREE)
    DO NOT instantiate a new scene, camera, or renderer.
 
-2. MANDATORY 3D VOLUME & COMPLETENESS:
-   - Always construct complete, solid, volumetric 3D objects with recognizable form (NEVER generate flat slivers, isolated thin planes, or 2D lines unless explicitly requested).
-   - Use compound geometries: build composite objects combining multiple meshes (e.g. main body + accent details + rings/frames + emissive cores) grouped inside a `const group = new THREE.Group();` and added to `scene.add(group);`.
-   - Scale: Keep dimensions well-proportioned (between 2.0 and 4.0 units wide/tall). Center the primary subject at (0, 0, 0).
+2. MANDATORY 3D VOLUME, ORIENTATION & SPATIAL ACCURACY:
+   - Always construct complete, solid, volumetric 3D objects with recognizable proportions (NEVER flat slivers, floating disconnected parts, or broken 2D lines).
+   - Group all parts of the model inside a master `const group = new THREE.Group();` and add it via `scene.add(group);`.
+   - COORDINATE ALIGNMENT: `THREE.TorusGeometry` and `THREE.RingGeometry` lie upright in the XY plane by default. If building a horizontal/flat ring, donut, wheel, or saucer, rotate the parent group or ALL aligned sub-meshes identically (e.g., `group.rotation.x = -Math.PI / 2` or `mesh.rotation.x = Math.PI / 2` consistently). NEVER rotate icing/tires differently from the base mesh!
+   - ANTI-Z-FIGHTING: Never place two meshes at the exact same position with identical radii. Offset outer layers (like icing, trim, armor, labels) slightly outward (`+0.03` to `+0.06` radius or `y + 0.02`) so surfaces never flicker or tear.
+   - SURFACE ATTACHMENT MATH: When placing details on a curved surface (e.g., sprinkles on a donut, craters on a sphere, windows on a cylinder), compute exact (x, y, z) coordinates on that mesh's surface using its exact parametric equation and orientation—NEVER scatter details randomly in mid-air.
+   - USE RICH GEOMETRIES: Use `LatheGeometry` (cups, bottles, vases, bowls, rockets), `ExtrudeGeometry` (beveled logos, gears, buildings), `TubeGeometry` (cables, pipes, handles), `CylinderGeometry`, `SphereGeometry`, and `TorusGeometry` with smooth segment counts (`32` to `64`).
 
 3. RICH MATERIALS & GLOW:
-   - Use vibrant MeshStandardMaterial or MeshPhysicalMaterial with metalness (0.3-0.85), roughness (0.15-0.4), and radiant emissive colors for sci-fi/energy elements.
-   - For all materials, specify high-contrast colors (e.g. crimson red 0xff3344, electric cyan 0x00d4ff, neon amber 0xffaa00, chrome 0xf0f0f5).
+   - Use realistic `MeshStandardMaterial` or `MeshPhysicalMaterial` with appropriate `color`, `metalness` (0.05-0.2 for organic/food/wood, 0.7-0.9 for metal), and `roughness` (0.15-0.75).
+   - Use `emissive` highlights only for glowing/sci-fi/neon parts.
 
 4. BRIGHT ILLUMINATION:
-   - Always add bright multi-source lighting: an AmbientLight (intensity 1.5+), plus 2 or more DirectionalLights / PointLights from different angles so all facets gleam.
+   - Always add multi-source lighting: an `AmbientLight` (intensity 1.5+), plus 2 or more `DirectionalLight` / `PointLight` sources from different angles.
 
 5. SMOOTH ANIMATION:
    - MUST return an animation loop callback:
      return function animate(time) {
          // 'time' is float timestamp in seconds
-         // Rotate meshes, pulse scales with Math.sin(time), etc.
+         // Smoothly rotate group.rotation.y = time * 0.4; etc.
      };
 
 6. STRICT OUTPUT MANDATE:
    - Output ONLY the raw JavaScript code body inside ```javascript ... ``` code fences.
    - Do NOT wrap in JSON. Never output {"title": ...}.
-   - You may put a one-line comment at the top for the title: // Title: Your Scene Title
+   - Put a one-line comment at the top for the title: // Title: Your Scene Title
 """
 
 PRESET_SCENES: List[Dict[str, Any]] = [
@@ -379,8 +386,37 @@ def clean_generated_code(raw_code: str) -> str:
     return s.strip()
 
 
+def call_gemini_3d(system_prompt: str, user_prompt: str) -> str:
+    """Generate procedural Three.js code using Gemini models with automatic fallback."""
+    if not settings.GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+
+    client = genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        http_options={"timeout": 20000},
+    )
+    last_err = None
+    for model_id in ("gemini-3.5-flash-lite", "gemini-3.8-flash"):
+        try:
+            response = client.models.generate_content(
+                model=model_id,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=0.2,
+                    max_output_tokens=4096,
+                ),
+            )
+            if response and response.text:
+                return response.text
+        except Exception as err:
+            last_err = err
+            print(f"[3D Generator] Gemini {model_id} error: {err}")
+    raise RuntimeError(f"All Gemini 3D models failed. Last error: {last_err}")
+
+
 def generate_3d_scene(prompt: str, language: str = "en") -> Dict[str, str]:
-    """Generate a custom procedural Three.js scene based on user prompt."""
+    """Generate a custom procedural Three.js scene using Gemini 2.5 Flash (with Groq fallback)."""
     if not prompt or not prompt.strip():
         p = PRESET_SCENES[0]
         return {
@@ -401,19 +437,23 @@ def generate_3d_scene(prompt: str, language: str = "en") -> Dict[str, str]:
                 "prompt": prompt,
             }
 
-    # Assemble messages for Groq requesting pure JavaScript code
     user_instruction = (
-        f"Generate procedural Three.js JavaScript scene code for:\n\"{prompt}\"\n\n"
-        "Remember: Output ONLY executable JavaScript inside ```javascript ... ```. Do NOT output JSON!"
+        f"Generate clean, geometrically accurate procedural Three.js JavaScript code for:\n\"{prompt}\"\n\n"
+        "Remember: Align all part orientations consistently, prevent Z-fighting, attach details cleanly to surfaces, "
+        "and output ONLY executable JavaScript inside ```javascript ... ```."
     )
 
-    messages = [
-        {"role": "system", "content": SYSTEM_INSTRUCTION_3D},
-        {"role": "user", "content": user_instruction}
-    ]
-
     try:
-        raw_output = call_groq_with_fallback(messages, max_tokens=2500)
+        try:
+            raw_output = call_gemini_3d(SYSTEM_INSTRUCTION_3D, user_instruction)
+        except Exception as gemini_err:
+            print(f"[3D Generator] Gemini fallback to Groq: {gemini_err}")
+            messages = [
+                {"role": "system", "content": SYSTEM_INSTRUCTION_3D},
+                {"role": "user", "content": user_instruction},
+            ]
+            raw_output = call_groq_with_fallback(messages, max_tokens=950)
+
         code = clean_generated_code(raw_output)
 
         # Extract title from initial comment if provided (e.g. // Title: Cyber Skull)

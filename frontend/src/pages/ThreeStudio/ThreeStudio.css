@@ -212,6 +212,63 @@
 }
 
 /* -------------------------------------------------- */
+/* PREMIUM RED & BLACK EMPTY STUDIO SCREEN            */
+/* -------------------------------------------------- */
+.studio-empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+  text-align: center;
+  padding: 0 24px 72px;
+  animation: fadeIn 0.45s ease forwards;
+}
+
+.studio-empty-glow {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 51, 68, 0.16) 0%, rgba(120, 10, 28, 0.05) 50%, transparent 72%);
+  filter: blur(22px);
+  position: absolute;
+  z-index: -1;
+}
+
+.studio-empty-title {
+  margin: 0 0 8px 0;
+  font-family: var(--font-audiowide, 'Audiowide', cursive);
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--brand-red, #ff3344);
+  text-shadow: 0 0 24px rgba(255, 51, 68, 0.35);
+}
+
+.studio-empty-title span {
+  color: #f4f4f5;
+}
+
+.studio-empty-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #a1a1aa;
+  letter-spacing: 0.01em;
+}
+
+.studio-empty-subtitle code {
+  font-family: 'JetBrains Mono', monospace;
+  color: #ff6b7a;
+  background: rgba(255, 51, 68, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* -------------------------------------------------- */
 /* LOADING ANIMATION OVERLAY                          */
 /* -------------------------------------------------- */
 .canvas-generating-overlay {

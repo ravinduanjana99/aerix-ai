@@ -15,69 +15,10 @@ import {
 import ThreeCanvas from "../../components/ThreeCanvas/ThreeCanvas";
 import "./ThreeStudio.css";
 
-const API_BASE = "http://127.0.0.1:8000";
-
-const INITIAL_SCENE_CODE = `// AERIX Radiant Crimson Core
-camera.position.set(0, 1.5, 6);
-camera.lookAt(0, 0, 0);
-
-// Key point lights
-const redLight = new THREE.PointLight(0xff3344, 4.0, 25);
-redLight.position.set(3, 4, 3);
-scene.add(redLight);
-
-const cyanLight = new THREE.PointLight(0x44ddff, 2.5, 25);
-cyanLight.position.set(-3, -2, -3);
-scene.add(cyanLight);
-
-// Outer geometric wireframe cage with bright reflections
-const coreGeo = new THREE.IcosahedronGeometry(1.25, 1);
-const coreMat = new THREE.MeshStandardMaterial({
-    color: 0xff3344,
-    emissive: 0x88001a,
-    roughness: 0.15,
-    metalness: 0.85,
-    wireframe: true
-});
-const core = new THREE.Mesh(coreGeo, coreMat);
-scene.add(core);
-
-// Inner illuminated metallic sphere
-const innerGeo = new THREE.SphereGeometry(0.75, 32, 32);
-const innerMat = new THREE.MeshStandardMaterial({
-    color: 0xff3355,
-    emissive: 0xaa1125,
-    roughness: 0.2,
-    metalness: 0.6
-});
-const inner = new THREE.Mesh(innerGeo, innerMat);
-scene.add(inner);
-
-// Orbital rings with chrome sheen
-const ringGroup = new THREE.Group();
-const ringMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    metalness: 0.9,
-    roughness: 0.15
-});
-const ring1 = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.035, 16, 100), ringMat);
-const ring2 = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.035, 16, 100), ringMat);
-ring2.rotation.x = Math.PI / 2.6;
-ringGroup.add(ring1);
-ringGroup.add(ring2);
-scene.add(ringGroup);
-
-return function animate(time) {
-    core.rotation.x = time * 0.4;
-    core.rotation.y = time * 0.6;
-    ringGroup.rotation.y = -time * 0.3;
-    ringGroup.rotation.z = time * 0.25;
-    const s = 1.0 + Math.sin(time * 3) * 0.06;
-    inner.scale.set(s, s, s);
-};`;
+const API_BASE = process.env.REACT_APP_API_BASE || "http://127.0.0.1:8000";
 
 const ThreeStudio = () => {
-  const [code, setCode] = useState(INITIAL_SCENE_CODE);
+  const [code, setCode] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -92,9 +33,11 @@ const ThreeStudio = () => {
 
     setIsGenerating(true);
     try {
-      const res = await axios.post(`${API_BASE}/3d/generate`, {
-        prompt: prompt.trim()
-      });
+      const res = await axios.post(
+        `${API_BASE}/3d/generate`,
+        { prompt: prompt.trim() },
+        { timeout: 35000 }
+      );
 
       if (res.data && res.data.code) {
         setCode(res.data.code);
@@ -207,6 +150,19 @@ const ThreeStudio = () => {
             code={code} 
             onCodeGenerated={(newCode) => setCode(newCode)} 
           />
+
+          {/* Clean Red & Black Gradient Empty State (until user generates or imports a model) */}
+          {!code && !isGenerating && (
+            <div className="studio-empty-state">
+              <div className="studio-empty-glow" />
+              <h3 className="studio-empty-title">
+                AERIX <span>3D Studio</span>
+              </h3>
+              <p className="studio-empty-subtitle">
+                Describe any 3D object below or drop a <code>.glb</code> model to begin
+              </p>
+            </div>
+          )}
 
           {/* Loading Animation Overlay */}
           {isGenerating && (
